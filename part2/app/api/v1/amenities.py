@@ -1,92 +1,63 @@
 from flask_restx import Namespace, Resource, fields
-from flask import request
-from app.services.facade import facade
+from app.services.facade import HBnBFacade
 
 api = Namespace('amenities', description='Amenity operations')
+facade = HBnBFacade()
 
 amenity_model = api.model('Amenity', {
-    'name': fields.String(required=True, description='Name of the amenity')
+    'name': fields.String(required=True)
 })
-
-amenity_response_model = api.model('AmenityResponse', {
-    'id': fields.String(description='Amenity ID'),
-    'name': fields.String(description='Name of the amenity'),
-    'created_at': fields.String(description='Creation timestamp'),
-    'updated_at': fields.String(description='Last update timestamp')
+amenity_response = api.model('AmenityResponse', {
+    'id': fields.String,
+    'name': fields.String,
+    'created_at': fields.String,
+    'updated_at': fields.String
 })
-
-amenity_update_model = api.model('AmenityUpdate', {
-    'name': fields.String(description='Name of the amenity')
+amenity_update = api.model('AmenityUpdate', {
+    'name': fields.String
 })
-
 
 @api.route('/')
 class AmenityList(Resource):
     @api.expect(amenity_model, validate=True)
-    @api.response(201, 'Amenity successfully created', amenity_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(409, 'Amenity name already exists')
+    @api.response(201, 'Created', amenity_response)
+    @api.response(400, 'Invalid input')
+    @api.response(409, 'Name exists')
     def post(self):
-        """Create a new amenity"""
         try:
-            amenity_data = api.payload
-            amenity = facade.create_amenity(amenity_data)
+            amenity = facade.create_amenity(api.payload)
             return amenity.to_dict(), 201
         except ValueError as e:
-            if "Amenity name already exists" in str(e):
+            if "exists" in str(e):
                 api.abort(409, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
+            api.abort(400, str(e))
 
-    @api.response(200, 'List of amenities retrieved successfully', [amenity_response_model])
+    @api.response(200, 'Success', [amenity_response])
     def get(self):
-        """Get all amenities"""
-        try:
-            amenities = facade.get_all_amenities()
-            return [amenity.to_dict() for amenity in amenities], 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
-
+        return [a.to_dict() for a in facade.get_all_amenities()], 200
 
 @api.route('/<string:amenity_id>')
 class AmenityResource(Resource):
-    @api.response(200, 'Amenity details retrieved successfully', amenity_response_model)
-    @api.response(404, 'Amenity not found')
+    @api.response(200, 'Success', amenity_response)
+    @api.response(404, 'Not found')
     def get(self, amenity_id):
-        """Get amenity details by ID"""
-        try:
-            amenity = facade.get_amenity(amenity_id)
-            if not amenity:
-                api.abort(404, 'Amenity not found')
-            return amenity.to_dict(), 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
+        amenity = facade.get_amenity(amenity_id)
+        if not amenity:
+            api.abort(404, "Amenity not found")
+        return amenity.to_dict(), 200
 
-    @api.expect(amenity_update_model, validate=True)
-    @api.response(200, 'Amenity updated successfully', amenity_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(404, 'Amenity not found')
-    @api.response(409, 'Amenity name already exists')
+    @api.expect(amenity_update, validate=True)
+    @api.response(200, 'Updated', amenity_response)
+    @api.response(400, 'Invalid input')
+    @api.response(404, 'Not found')
+    @api.response(409, 'Name exists')
     def put(self, amenity_id):
-        """Update amenity by ID"""
         try:
-            amenity_data = api.payload
-            
-            existing_amenity = facade.get_amenity(amenity_id)
-            if not existing_amenity:
-                api.abort(404, 'Amenity not found')
-            
-            updated_amenity = facade.update_amenity(amenity_id, amenity_data)
-            if not updated_amenity:
-                api.abort(404, 'Amenity not found')
-            
-            return updated_amenity.to_dict(), 200
+            amenity = facade.update_amenity(amenity_id, api.payload)
+            if not amenity:
+                api.abort(404, "Amenity not found")
+            return amenity.to_dict(), 200
         except ValueError as e:
-            if "Amenity name already exists" in str(e):
+            if "exists" in str(e):
                 api.abort(409, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
+            api.abort(400, str(e))

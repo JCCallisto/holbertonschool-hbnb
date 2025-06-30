@@ -1,192 +1,140 @@
+from app.persistence.memory_repository import MemoryRepository
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
-
+from app.services import validators
 
 class HBnBFacade:
     def __init__(self):
-        self.users = {}
-        self.amenities = {}
-        self.places = {}
-        self.reviews = {}
+        self.repo = MemoryRepository()
 
-    def create_user(self, user_data):
-        email = user_data.get('email', '').strip().lower()
-        for user in self.users.values():
-            if user.email == email:
-                raise ValueError("Email already exists")
-        
-        user = User(
-            first_name=user_data['first_name'],
-            last_name=user_data['last_name'],
-            email=user_data['email'],
-            password=user_data['password'],
-            is_admin=user_data.get('is_admin', False)
-        )
-        self.users[user.id] = user
+    # User
+    def create_user(self, data):
+        errors = validators.validate_user_data(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        if self.repo.get_user_by_email(data['email']):
+            raise ValueError("Email already exists")
+        user = User(data['first_name'], data['last_name'], data['email'], data['password'], data.get('is_admin', False))
+        self.repo.add_user(user)
         return user
 
     def get_user(self, user_id):
-        return self.users.get(user_id)
+        return self.repo.get_user(user_id)
 
     def get_all_users(self):
-        return list(self.users.values())
+        return self.repo.get_all_users()
 
-    def update_user(self, user_id, user_data):
-        user = self.get_user(user_id)
-        if not user:
-            return None
-        
-        if 'email' in user_data:
-            email = user_data['email'].strip().lower()
-            for uid, u in self.users.items():
-                if uid != user_id and u.email == email:
-                    raise ValueError("Email already exists")
-        
-        user.update(user_data)
-        return user
+    def update_user(self, user_id, data):
+        errors = validators.validate_user_data({**self.repo.get_user(user_id).__dict__, **data})
+        if errors:
+            raise ValueError("; ".join(errors))
+        if 'email' in data:
+            existing = self.repo.get_user_by_email(data['email'])
+            if existing and existing.id != user_id:
+                raise ValueError("Email already exists")
+        return self.repo.update_user(user_id, data)
 
-    def create_amenity(self, amenity_data):
-        name = amenity_data.get('name', '').strip()
-        for amenity in self.amenities.values():
-            if amenity.name.lower() == name.lower():
-                raise ValueError("Amenity name already exists")
-        
-        amenity = Amenity(name=amenity_data['name'])
-        self.amenities[amenity.id] = amenity
+    # Amenity
+    def create_amenity(self, data):
+        errors = validators.validate_amenity_data(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        if self.repo.get_amenity_by_name(data['name']):
+            raise ValueError("Amenity name already exists")
+        amenity = Amenity(data['name'])
+        self.repo.add_amenity(amenity)
         return amenity
 
     def get_amenity(self, amenity_id):
-        return self.amenities.get(amenity_id)
+        return self.repo.get_amenity(amenity_id)
 
     def get_all_amenities(self):
-        return list(self.amenities.values())
+        return self.repo.get_all_amenities()
 
-    def update_amenity(self, amenity_id, amenity_data):
-        amenity = self.get_amenity(amenity_id)
-        if not amenity:
-            return None
-        
-        if 'name' in amenity_data:
-            name = amenity_data['name'].strip()
-            for aid, a in self.amenities.items():
-                if aid != amenity_id and a.name.lower() == name.lower():
-                    raise ValueError("Amenity name already exists")
-        
-        amenity.update(amenity_data)
-        return amenity
+    def update_amenity(self, amenity_id, data):
+        errors = validators.validate_amenity_data({**self.repo.get_amenity(amenity_id).__dict__, **data})
+        if errors:
+            raise ValueError("; ".join(errors))
+        if 'name' in data:
+            existing = self.repo.get_amenity_by_name(data['name'])
+            if existing and existing.id != amenity_id:
+                raise ValueError("Amenity name already exists")
+        return self.repo.update_amenity(amenity_id, data)
 
-    def create_place(self, place_data):
-        owner = self.get_user(place_data['owner_id'])
-        if not owner:
+    # Place
+    def create_place(self, data):
+        errors = validators.validate_place_data(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        if not self.repo.get_user(data['owner_id']):
             raise ValueError("Owner not found")
-        
-        amenity_ids = place_data.get('amenity_ids', [])
-        for amenity_id in amenity_ids:
-            if not self.get_amenity(amenity_id):
-                raise ValueError(f"Amenity {amenity_id} not found")
-        
+        for amenity_id in data.get('amenity_ids', []):
+            if not self.repo.get_amenity(amenity_id):
+                raise ValueError("Amenity not found: " + amenity_id)
         place = Place(
-            title=place_data['title'],
-            description=place_data.get('description', ''),
-            price=place_data['price'],
-            latitude=place_data['latitude'],
-            longitude=place_data['longitude'],
-            owner_id=place_data['owner_id'],
-            facade=self  # Pass facade reference to avoid circular imports
-        )
-        
-        # Add amenities to place
-        for amenity_id in amenity_ids:
-            amenity = self.get_amenity(amenity_id)
-            place.add_amenity(amenity)
-        
-        self.places[place.id] = place
+            data['title'], data.get('description', ""), data['price'],
+            data['latitude'], data['longitude'], data['owner_id'], data.get('amenity_ids', []))
+        self.repo.add_place(place)
         return place
 
     def get_place(self, place_id):
-        return self.places.get(place_id)
+        return self.repo.get_place(place_id)
 
     def get_all_places(self):
-        return list(self.places.values())
+        return self.repo.get_all_places()
 
+    def update_place(self, place_id, data):
+        errors = validators.validate_place_data({**self.repo.get_place(place_id).__dict__, **data})
+        if errors:
+            raise ValueError("; ".join(errors))
+        if 'owner_id' in data:
+            if not self.repo.get_user(data['owner_id']):
+                raise ValueError("Owner not found")
+        if 'amenity_ids' in data:
+            for amenity_id in data['amenity_ids']:
+                if not self.repo.get_amenity(amenity_id):
+                    raise ValueError("Amenity not found: " + amenity_id)
+        return self.repo.update_place(place_id, data)
+
+    # For serialization with relations
     def get_place_with_details(self, place_id):
-        return self.get_place(place_id)
-
-    def get_all_places_with_details(self):
-        return self.get_all_places()
-
-    def update_place(self, place_id, place_data):
         place = self.get_place(place_id)
         if not place:
             return None
-        
-        if 'amenity_ids' in place_data:
-            amenity_ids = place_data['amenity_ids']
-            for amenity_id in amenity_ids:
-                if not self.get_amenity(amenity_id):
-                    raise ValueError(f"Amenity {amenity_id} not found")
-            
-            # Clear current amenities and add new ones
-            place._amenities = []
-            for amenity_id in amenity_ids:
-                amenity = self.get_amenity(amenity_id)
-                place.add_amenity(amenity)
-        
-        place.update(place_data)
-        return place
+        owner = self.get_user(place.owner_id)
+        amenities = [self.get_amenity(aid) for aid in place.amenity_ids if self.get_amenity(aid)]
+        reviews = [self.get_review(rid) for rid in getattr(place, 'review_ids', []) if self.get_review(rid)]
+        return place, owner, amenities, reviews
 
-    def create_review(self, review_data):
-        # Validate place and user exist
-        place = self.get_place(review_data['place_id'])
-        user = self.get_user(review_data['user_id'])
-        
-        if not place:
+    def get_all_places_with_details(self):
+        return [self.get_place_with_details(p.id) for p in self.get_all_places()]
+
+    # Review
+    def create_review(self, data):
+        errors = validators.validate_review_data(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        if not self.repo.get_place(data['place_id']):
             raise ValueError("Place not found")
-        if not user:
+        if not self.repo.get_user(data['user_id']):
             raise ValueError("User not found")
-        
-        # Check if user is trying to review their own place
-        if user.id == place.owner_id:
-            raise ValueError("Users cannot review their own places")
-        
-        review = Review(
-            text=review_data['text'],
-            rating=review_data['rating'],
-            place_id=review_data['place_id'],
-            user_id=review_data['user_id'],
-            facade=self  # Pass facade reference
-        )
-        
-        self.reviews[review.id] = review
+        review = Review(data['text'], data['rating'], data['place_id'], data['user_id'])
+        self.repo.add_review(review)
         return review
 
     def get_review(self, review_id):
-        return self.reviews.get(review_id)
+        return self.repo.get_review(review_id)
 
     def get_all_reviews(self):
-        return list(self.reviews.values())
+        return self.repo.get_all_reviews()
 
-    def update_review(self, review_id, review_data):
-        review = self.get_review(review_id)
-        if not review:
-            return None
-        
-        review.update(review_data)
-        return review
+    def update_review(self, review_id, data):
+        errors = validators.validate_review_data({**self.repo.get_review(review_id).__dict__, **data})
+        if errors:
+            raise ValueError("; ".join(errors))
+        return self.repo.update_review(review_id, data)
 
     def delete_review(self, review_id):
-        review = self.reviews.pop(review_id, None)
-        if review:
-            # Remove review from place and user
-            place = self.get_place(review.place_id)
-            user = self.get_user(review.user_id)
-            
-            if place:
-                place.remove_review(review)
-            if user:
-                user.remove_review(review)
-        
-        return review is not None
-    facade = HBnBFacade()
+        return self.repo.delete_review(review_id)
