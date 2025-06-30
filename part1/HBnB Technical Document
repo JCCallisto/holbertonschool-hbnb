@@ -1,0 +1,777 @@
+
+# HBnB Evolution - Technical Documentation Blueprint
+
+## Table of Contents
+1. [Introduction](#introduction)
+2. [High-Level Architecture](#high-level-architecture)
+3. [Business Logic Layer](#business-logic-layer)
+4. [API Interaction Flow](#api-interaction-flow)
+5. [Implementation Guidelines](#implementation-guidelines)
+6. [Appendices](#appendices)
+
+## Introduction
+
+### Project Overview
+HBnB Evolution is a simplified AirBnB-like application designed to demonstrate modern software architecture principles through a layered approach. The application enables users to manage properties, reviews, and amenities while maintaining clean separation of concerns and scalable design patterns.
+
+### Purpose of This Document
+This technical documentation serves as the definitive blueprint for the HBnB project implementation. It provides:
+- Detailed architectural diagrams with explanations
+- Class relationships and business logic specifications
+- API interaction flows and sequence diagrams
+- Implementation guidelines and best practices
+- Reference material for development teams
+
+### Document Scope
+The documentation covers the complete system architecture from presentation layer through persistence layer, focusing on:
+- **Structural Design**: Package organization and component relationships
+- **Behavioral Design**: Interaction patterns and data flow
+- **Business Logic**: Entity models and constraint implementation
+- **Integration Patterns**: API design and inter-layer communication
+
+### Key Stakeholders
+- **Development Team**: Primary implementation reference
+- **System Architects**: Design validation and evolution planning
+- **Quality Assurance**: Testing strategy and validation criteria
+- **Project Managers**: Progress tracking and milestone planning
+
+## High-Level Architecture
+
+### Architectural Overview
+The HBnB Evolution application implements a three-tier architecture pattern with the Facade design pattern to ensure clean separation of concerns and maintainable code structure.
+
+```mermaid
+classDiagram
+    class PresentationLayer {
+        <<Package>>
+        +API Services
+        +REST Endpoints
+        +Authentication Service
+        +Input Validation
+        +Response Formatting
+    }
+    
+    class BusinessLogicLayer {
+        <<Package>>
+        +HBnB Facade
+        +User Model
+        +Place Model
+        +Review Model
+        +Amenity Model
+        +Business Rules
+        +Model Validation
+    }
+    
+    class PersistenceLayer {
+        <<Package>>
+        +User Repository
+        +Place Repository
+        +Review Repository
+        +Amenity Repository
+        +Database Connection
+        +Data Access Objects
+    }
+    
+    class HBnBFacade {
+        <<Facade>>
+        +registerUser()
+        +createPlace()
+        +submitReview()
+        +manageAmenities()
+        +getPlaces()
+        +getReviews()
+    }
+    
+    PresentationLayer --> HBnBFacade : "Uses Facade Pattern"
+    HBnBFacade --> BusinessLogicLayer : "Coordinates Business Logic"
+    BusinessLogicLayer --> PersistenceLayer : "Database Operations"
+    
+    note for PresentationLayer "Handles user interactions\nand API requests"
+    note for BusinessLogicLayer "Contains core business logic\nand domain models"
+    note for PersistenceLayer "Manages data storage\nand retrieval"
+    note for HBnBFacade "Provides unified interface\nbetween layers"
+```
+
+### Layer Responsibilities and Design Rationale
+
+#### Presentation Layer
+**Purpose**: Manages all client-facing interactions and serves as the entry point for external requests.
+
+**Key Components**:
+- **API Services**: RESTful endpoints following REST conventions
+- **Authentication Service**: JWT-based user session management
+- **Input Validation**: Request data sanitization and validation
+- **Response Formatting**: Consistent API response structure
+
+**Design Decisions**:
+- RESTful API design ensures stateless communication and scalability
+- Centralized authentication service provides consistent security across endpoints
+- Input validation at this layer prevents malicious data from reaching business logic
+- Standardized response formatting improves client integration and debugging
+
+#### Business Logic Layer (Facade Pattern Implementation)
+**Purpose**: Contains all domain-specific logic and coordinates operations between presentation and persistence layers.
+
+**Key Components**:
+- **HBnB Facade**: Single entry point for all business operations
+- **Domain Models**: User, Place, Review, and Amenity entities with embedded business rules
+- **Business Rules Engine**: Validates constraints and enforces application-specific logic
+- **Model Validation**: Entity-level data integrity and business rule validation
+
+**Design Decisions**:
+- Facade pattern simplifies inter-layer communication and reduces coupling
+- Rich domain models encapsulate business logic within entities
+- Centralized business rules ensure consistency across the application
+- Separation of validation concerns allows for flexible rule modification
+
+#### Persistence Layer
+**Purpose**: Manages all data storage and retrieval operations while abstracting database implementation details.
+
+**Key Components**:
+- **Repository Pattern**: Data access abstraction for each entity type
+- **Database Connection Management**: Connection pooling and transaction handling
+- **Data Access Objects (DAO)**: Low-level database operation implementation
+- **Entity Mapping**: Object-relational mapping and data transformation
+
+**Design Decisions**:
+- Repository pattern allows for easy database technology changes
+- Connection pooling improves performance and resource utilization
+- DAO pattern separates SQL implementation from business logic
+- Entity mapping maintains object-oriented design principles
+
+### Facade Pattern Benefits
+The HBnB Facade serves as the architectural cornerstone, providing:
+
+1. **Simplified Interface**: Complex multi-step operations exposed through single method calls
+2. **Decoupling**: Presentation layer remains independent of persistence layer implementation
+3. **Centralized Control**: All cross-cutting concerns (logging, error handling, transaction management) handled consistently
+4. **Testability**: Clear boundaries enable effective unit testing and mocking strategies
+
+### Communication Flow
+```
+Client Request → API Layer → HBnB Facade → Business Logic → Persistence Layer → Database
+                     ↓                                                                    ↑
+               Response Formatting ← Facade Coordination ← Data Processing ← Query Results
+```
+
+## Business Logic Layer
+
+### Domain Model Architecture
+The Business Logic Layer implements a rich domain model where entities encapsulate both data and behavior, following Domain-Driven Design principles.
+
+```mermaid
+classDiagram
+    class User {
+        -String id
+        -String firstName
+        -String lastName
+        -String email
+        -String password
+        -boolean isAdmin
+        -DateTime createdAt
+        -DateTime updatedAt
+        +User(firstName, lastName, email, password)
+        +validateEmail(email) boolean
+        +hashPassword(password) String
+        +authenticate(password) boolean
+        +updateProfile(firstName, lastName, email) void
+        +setAdminStatus(isAdmin) void
+        +getId() String
+        +getFullName() String
+        +getEmail() String
+        +isAdministrator() boolean
+        +getCreatedAt() DateTime
+        +getUpdatedAt() DateTime
+        +toString() String
+    }
+    
+    class Place {
+        -String id
+        -String title
+        -String description
+        -double price
+        -double latitude
+        -double longitude
+        -User owner
+        -List~Amenity~ amenities
+        -List~Review~ reviews
+        -DateTime createdAt
+        -DateTime updatedAt
+        +Place(title, description, price, latitude, longitude, owner)
+        +validateCoordinates(latitude, longitude) boolean
+        +validatePrice(price) boolean
+        +updateDetails(title, description, price) void
+        +setLocation(latitude, longitude) void
+        +addAmenity(amenity) boolean
+        +removeAmenity(amenity) boolean
+        +addReview(review) void
+        +calculateAverageRating() double
+        +getTotalReviews() int
+        +getId() String
+        +getTitle() String
+        +getDescription() String
+        +getPrice() double
+        +getCoordinates() Coordinates
+        +getOwner() User
+        +getAmenities() List~Amenity~
+        +getReviews() List~Review~
+        +toString() String
+    }
+    
+    class Review {
+        -String id
+        -Place place
+        -User user
+        -int rating
+        -String comment
+        -DateTime createdAt
+        -DateTime updatedAt
+        +Review(place, user, rating, comment)
+        +validateRating(rating) boolean
+        +validateComment(comment) boolean
+        +updateReview(rating, comment) void
+        +isReviewByUser(user) boolean
+        +getId() String
+        +getRating() int
+        +getComment() String
+        +getPlace() Place
+        +getUser() User
+        +getCreatedAt() DateTime
+        +getUpdatedAt() DateTime
+        +toString() String
+    }
+    
+    class Amenity {
+        -String id
+        -String name
+        -String description
+        -DateTime createdAt
+        -DateTime updatedAt
+        +Amenity(name, description)
+        +validateName(name) boolean
+        +updateDetails(name, description) void
+        +getId() String
+        +getName() String
+        +getDescription() String
+        +getCreatedAt() DateTime
+        +getUpdatedAt() DateTime
+        +equals(Object obj) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class BaseEntity {
+        <<abstract>>
+        #String id
+        #DateTime createdAt
+        #DateTime updatedAt
+        +BaseEntity()
+        +generateId() String
+        +updateTimestamp() void
+        +getId() String
+        +getCreatedAt() DateTime
+        +getUpdatedAt() DateTime
+    }
+    
+    class Coordinates {
+        -double latitude
+        -double longitude
+        +Coordinates(latitude, longitude)
+        +validateLatitude(latitude) boolean
+        +validateLongitude(longitude) boolean
+        +getLatitude() double
+        +getLongitude() double
+        +toString() String
+    }
+    
+    %% Inheritance Relationships
+    User --|> BaseEntity : extends
+    Place --|> BaseEntity : extends
+    Review --|> BaseEntity : extends
+    Amenity --|> BaseEntity : extends
+    
+    %% Association Relationships
+    User ||--o{ Place : "owns\n1..*"
+    User ||--o{ Review : "writes\n0..*"
+    Place ||--o{ Review : "receives\n0..*"
+    Place }o--o{ Amenity : "has\n0..*"
+    Place *-- Coordinates : "located at\n1"
+    
+    %% Dependency Relationships
+    Review --> User : "references"
+    Review --> Place : "references"
+    Place --> User : "owned by"
+```
+
+### Entity Specifications and Business Logic
+
+#### BaseEntity (Abstract Foundation)
+**Purpose**: Provides common infrastructure for all domain entities, ensuring consistency in identity management and audit trails.
+
+**Key Design Elements**:
+- **UUID Generation**: Ensures globally unique identifiers across distributed systems
+- **Audit Timestamps**: Automatic creation and modification timestamp management
+- **Template Method Pattern**: Standardizes entity lifecycle management
+
+**Implementation Rationale**: 
+The abstract base class eliminates code duplication and ensures all entities follow consistent patterns for identification and auditing, which is crucial for data integrity and system monitoring.
+
+#### User Entity
+**Purpose**: Represents system participants with role-based capabilities and secure credential management.
+
+**Business Logic Implementation**:
+- **Email Validation**: RFC-compliant email format validation with uniqueness constraints
+- **Password Security**: BCrypt hashing with salt for secure password storage
+- **Role Management**: Boolean flag for admin privileges with role-based access control
+- **Profile Management**: Self-service profile updates with validation
+
+**Key Business Rules**:
+1. Email addresses must be unique across the system
+2. Passwords must meet minimum security requirements (8 characters, mixed case, numbers)
+3. Only administrators can modify user roles
+4. Users can only update their own profiles unless they have admin privileges
+
+**Relationship Management**:
+- **One-to-Many with Places**: Users can own multiple properties
+- **One-to-Many with Reviews**: Users can write multiple reviews but only one per place
+
+#### Place Entity
+**Purpose**: Represents rental properties with location data, pricing information, and amenity associations.
+
+**Business Logic Implementation**:
+- **Coordinate Validation**: Geographic boundary validation for latitude (-90 to 90) and longitude (-180 to 180)
+- **Price Validation**: Positive price validation with currency formatting
+- **Amenity Management**: Dynamic amenity association with validation
+- **Rating Calculation**: Real-time average rating computation from associated reviews
+
+**Key Business Rules**:
+1. Places must have valid geographic coordinates
+2. Prices must be positive values
+3. Places must be associated with a valid user (owner)
+4. Amenities must exist in the system before association
+5. Average ratings are calculated from all associated reviews
+
+**Relationship Management**:
+- **Many-to-One with User**: Each place has exactly one owner
+- **One-to-Many with Reviews**: Places can receive multiple reviews
+- **Many-to-Many with Amenities**: Flexible amenity associations
+- **Composition with Coordinates**: Strong ownership of location data
+
+#### Review Entity
+**Purpose**: Captures user feedback and ratings for places with integrity constraints.
+
+**Business Logic Implementation**:
+- **Rating Validation**: Integer rating between 1 and 5 with boundary checking
+- **Comment Validation**: Text length limits and content filtering
+- **Ownership Verification**: Ensures review authorship integrity
+- **Duplicate Prevention**: Enforces one review per user-place combination
+
+**Key Business Rules**:
+1. Users cannot review their own places
+2. Each user can review a place only once
+3. Ratings must be integers between 1 and 5
+4. Comments have minimum and maximum length requirements
+5. Reviews can only be modified by their authors
+
+**Relationship Management**:
+- **Many-to-One with User**: Each review has exactly one author
+- **Many-to-One with Place**: Each review is associated with exactly one place
+
+#### Amenity Entity
+**Purpose**: Represents standardized features and services available at places.
+
+**Business Logic Implementation**:
+- **Name Validation**: Unique name requirements with case-insensitive checking
+- **Description Management**: Rich text description with formatting support
+- **Equality Implementation**: Custom equals and hashCode for collection operations
+
+**Key Business Rules**:
+1. Amenity names must be unique (case-insensitive)
+2. Only administrators can manage amenities
+3. Amenities cannot be deleted if associated with places
+4. Description updates require validation for appropriate content
+
+#### Coordinates (Value Object)
+**Purpose**: Encapsulates geographic location data with validation and immutability.
+
+**Implementation Characteristics**:
+- **Immutable Design**: Value object pattern ensures data integrity
+- **Validation Logic**: Geographic boundary validation
+- **Formatting Support**: String representation for display and serialization
+
+### Entity Relationship Analysis
+
+#### Inheritance Hierarchy Benefits
+- **Code Reuse**: Common functionality inherited from BaseEntity
+- **Consistency**: Uniform approach to entity management across the system
+- **Extensibility**: Easy addition of new entities following established patterns
+
+#### Association Design Patterns
+- **Bidirectional Relationships**: Maintained consistency between related entities
+- **Cascade Operations**: Proper handling of dependent entity lifecycle
+- **Lazy Loading**: Performance optimization for large collections
+
+#### Business Constraint Enforcement
+The domain model enforces business constraints at multiple levels:
+1. **Entity Level**: Validation within individual entities
+2. **Relationship Level**: Constraints across entity associations
+3. **Transaction Level**: Complex multi-entity business rules
+
+## API Interaction Flow
+
+### Sequence Diagram Analysis
+The following sequence diagrams illustrate the complete request-response flow for critical API operations, demonstrating the layered architecture in action.
+
+#### 1. User Registration Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Presentation Layer<br/>(API Service)
+    participant Facade as Business Logic Layer<br/>(HBnB Facade)
+    participant UserMgr as Business Logic Layer<br/>(User Manager)
+    participant UserModel as Business Logic Layer<br/>(User Model)
+    participant UserDAO as Persistence Layer<br/>(User DAO)
+    participant DB as Persistence Layer<br/>(Database)
+    
+    Client->>API: POST /users/register<br/>{firstName, lastName, email, password}
+    
+    Note over API: Input Validation & Sanitization
+    API->>API: validateRequestData(userData)
+    API->>API: sanitizeInput(userData)
+    
+    API->>Facade: registerUser(userData)
+    
+    Note over Facade: Business Logic Coordination
+    Facade->>UserMgr: createUser(userData)
+    
+    Note over UserMgr: Business Rule Validation
+    UserMgr->>UserMgr: validateEmailUniqueness(email)
+    UserMgr->>UserMgr: validatePasswordStrength(password)
+    
+    UserMgr->>UserModel: new User(firstName, lastName, email, password)
+    UserModel->>UserModel: generateId()
+    UserModel->>UserModel: hashPassword(password)
+    UserModel->>UserModel: validateEmail(email)
+    UserModel-->>UserMgr: User object created
+    
+    UserMgr->>UserDAO: save(userObject)
+    UserDAO->>DB: INSERT INTO users VALUES(...)
+    
+    alt Successful Registration
+        DB-->>UserDAO: Success (User ID returned)
+        UserDAO-->>UserMgr: User object with ID
+        UserMgr-->>Facade: Registration successful
+        Facade-->>API: {success: true, user: userObject}
+        API-->>Client: HTTP 201 Created<br/>{id, firstName, lastName, email, createdAt}
+    else Registration Failed
+        DB-->>UserDAO: Error (Duplicate email)
+        UserDAO-->>UserMgr: ValidationError
+        UserMgr-->>Facade: Registration failed
+        Facade-->>API: {success: false, error: "Email already exists"}
+        API-->>Client: HTTP 400 Bad Request<br/>{error: "Email already exists"}
+    end
+```
+
+**Flow Analysis**:
+1. **Input Processing**: API layer handles request validation and sanitization
+2. **Business Coordination**: Facade orchestrates the registration process
+3. **Domain Logic**: User Manager applies business rules and validation
+4. **Entity Creation**: User Model handles object instantiation and validation
+5. **Persistence**: DAO layer manages database operations with error handling
+6. **Response Formation**: Structured response based on operation outcome
+
+**Design Decisions Explained**:
+- **Layered Validation**: Multiple validation points ensure data integrity
+- **Error Handling**: Specific error types with appropriate HTTP status codes
+- **Security**: Password hashing occurs in domain layer, not at API level
+- **Atomicity**: Database operations are transactional to prevent partial updates
+
+#### 2. Place Creation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Presentation Layer<br/>(API Service)
+    participant Auth as Presentation Layer<br/>(Auth Service)
+    participant Facade as Business Logic Layer<br/>(HBnB Facade)
+    participant PlaceMgr as Business Logic Layer<br/>(Place Manager)
+    participant PlaceModel as Business Logic Layer<br/>(Place Model)
+    participant UserMgr as Business Logic Layer<br/>(User Manager)
+    participant PlaceDAO as Persistence Layer<br/>(Place DAO)
+    participant DB as Persistence Layer<br/>(Database)
+    
+    Client->>API: POST /places<br/>{title, description, price, latitude, longitude, amenities}<br/>Authorization: Bearer token
+    
+    Note over API: Authentication & Authorization
+    API->>Auth: validateToken(bearerToken)
+    Auth->>Auth: verifyJWT(token)
+    Auth-->>API: {valid: true, userId: "user123"}
+    
+    API->>API: validatePlaceData(placeData)
+    API->>Facade: createPlace(placeData, userId)
+    
+    Note over Facade: User Verification
+    Facade->>UserMgr: getUserById(userId)
+    UserMgr->>UserDAO: findById(userId)
+    UserDAO->>DB: SELECT * FROM users WHERE id = ?
+    DB-->>UserDAO: User record
+    UserDAO-->>UserMgr: User object
+    UserMgr-->>Facade: Valid user confirmed
+    
+    Note over Facade: Place Creation Process
+    Facade->>PlaceMgr: createPlace(placeData, userObject)
+    
+    PlaceMgr->>PlaceModel: new Place(title, description, price, lat, lng, owner)
+    PlaceModel->>PlaceModel: generateId()
+    PlaceModel->>PlaceModel: validateCoordinates(lat, lng)
+    PlaceModel->>PlaceModel: validatePrice(price)
+    PlaceModel-->>PlaceMgr: Place object created
+    
+    Note over PlaceMgr: Amenity Association
+    loop For each amenity in amenities
+        PlaceMgr->>PlaceModel: addAmenity(amenity)
+    end
+    
+    PlaceMgr->>PlaceDAO: save(placeObject)
+    PlaceDAO->>DB: INSERT INTO places VALUES(...)
+    PlaceDAO->>DB: INSERT INTO place_amenities VALUES(...)
+    
+    alt Successful Creation
+        DB-->>PlaceDAO: Success (Place ID returned)
+        PlaceDAO-->>PlaceMgr: Place object with ID
+        PlaceMgr-->>Facade: Place created successfully
+        Facade-->>API: {success: true, place: placeObject}
+        API-->>Client: HTTP 201 Created<br/>{id, title, description, price, coordinates, amenities}
+    else Creation Failed
+        DB-->>PlaceDAO: Error (Validation failed)
+        PlaceDAO-->>PlaceMgr: ValidationError
+        PlaceMgr-->>Facade: Creation failed
+        Facade-->>API: {success: false, error: "Invalid place data"}
+        API-->>Client: HTTP 400 Bad Request<br/>{error: "Invalid coordinates or price"}
+    end
+```
+
+**Flow Analysis**:
+1. **Authentication**: JWT token validation and user identification
+2. **Authorization**: Verification of user's ability to create places
+3. **Entity Verification**: Confirmation of user existence and validity
+4. **Business Logic**: Place creation with coordinate and price validation
+5. **Relationship Management**: Amenity association with validation
+6. **Transaction Management**: Atomic database operations for consistency
+
+**Security Considerations**:
+- **Token Validation**: JWT signature verification and expiration checking
+- **User Context**: Operations performed in authenticated user context
+- **Authorization Checks**: Verification of user permissions for place creation
+
+#### 3. Review Submission Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Presentation Layer<br/>(API Service)
+    participant Auth as Presentation Layer<br/>(Auth Service)
+    participant Facade as Business Logic Layer<br/>(HBnB Facade)
+    participant ReviewMgr as Business Logic Layer<br/>(Review Manager)
+    participant ReviewModel as Business Logic Layer<br/>(Review Model)
+    participant PlaceMgr as Business Logic Layer<br/>(Place Manager)
+    participant UserMgr as Business Logic Layer<br/>(User Manager)
+    participant ReviewDAO as Persistence Layer<br/>(Review DAO)
+    participant DB as Persistence Layer<br/>(Database)
+    
+    Client->>API: POST /places/{placeId}/reviews<br/>{rating, comment}<br/>Authorization: Bearer token
+    
+    Note over API: Authentication & Input Validation
+    API->>Auth: validateToken(bearerToken)
+    Auth-->>API: {valid: true, userId: "user123"}
+    API->>API: validateReviewData(rating, comment)
+    
+    API->>Facade: submitReview(placeId, reviewData, userId)
+    
+    Note over Facade: Entity Verification
+    par Verify Place Exists
+        Facade->>PlaceMgr: getPlaceById(placeId)
+        PlaceMgr->>PlaceDAO: findById(placeId)
+        PlaceDAO->>DB: SELECT * FROM places WHERE id = ?
+        DB-->>PlaceDAO: Place record
+        PlaceDAO-->>PlaceMgr: Place object
+        PlaceMgr-->>Facade: Place found
+    and Verify User Exists
+        Facade->>UserMgr: getUserById(userId)
+        UserMgr->>UserDAO: findById(userId)
+        UserDAO->>DB: SELECT * FROM users WHERE id = ?
+        DB-->>UserDAO: User record
+        UserDAO-->>UserMgr: User object
+        UserMgr-->>Facade: User found
+    end
+    
+    Note over Facade: Business Rule Validation
+    Facade->>ReviewMgr: validateReviewConstraints(placeId, userId)
+    ReviewMgr->>ReviewDAO: checkExistingReview(placeId, userId)
+    ReviewDAO->>DB: SELECT COUNT(*) FROM reviews WHERE place_id = ? AND user_id = ?
+    DB-->>ReviewDAO: Count result
+    ReviewDAO-->>ReviewMgr: Review count
+    
+    alt No Existing Review and Not Owner
+        ReviewMgr->>ReviewModel: new Review(place, user, rating, comment)
+        ReviewModel->>ReviewModel: generateId()
+        ReviewModel->>ReviewModel: validateRating(rating)
+        ReviewModel->>ReviewModel: validateComment(comment)
+        ReviewModel-->>ReviewMgr: Review object created
+        
+        ReviewMgr->>ReviewDAO: save(reviewObject)
+        ReviewDAO->>DB: INSERT INTO reviews VALUES(...)
+        DB-->>ReviewDAO: Success (Review ID returned)
+        ReviewDAO-->>ReviewMgr: Review object with ID
+        ReviewMgr-->>Facade: Review submitted successfully
+        Facade-->>API: {success: true, review: reviewObject}
+        API-->>Client: HTTP 201 Created<br/>{id, rating, comment, place, user, createdAt}
+    else Review Already Exists
+        ReviewMgr-->>Facade: {error: "Review already exists"}
+        Facade-->>API: {success: false, error: "User already reviewed this place"}
+        API-->>Client: HTTP 409 Conflict<br/>{error: "You have already reviewed this place"}
+    else User is Place Owner
+        ReviewMgr-->>Facade: {error: "Cannot review own place"}
+        Facade-->>API: {success: false, error: "Cannot review own place"}
+        API-->>Client: HTTP 403 Forbidden<br/>{error: "You cannot review your own place"}
+    end
+```
+
+**Business Rule Enforcement**:
+1. **Duplicate Prevention**: Checking for existing reviews by the same user
+2. **Ownership Validation**: Preventing self-reviews of owned places
+3. **Entity Existence**: Verifying both place and user exist before review creation
+4. **Rating Validation**: Ensuring rating values are within acceptable range
+
+#### 4. Place Retrieval Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Presentation Layer<br/>(API Service)
+    participant Facade as Business Logic Layer<br/>(HBnB Facade)
+    participant PlaceMgr as Business Logic Layer<br/>(Place Manager)
+    participant PlaceDAO as Persistence Layer<br/>(Place DAO)
+    participant DB as Persistence Layer<br/>(Database)
+    
+    Client->>API: GET /places?location=Miami&price_min=50&price_max=200&amenities=wifi,pool&page=1&limit=10
+    
+    Note over API: Query Parameter Processing
+    API->>API: parseQueryParameters(queryParams)
+    API->>API: validatePaginationParams(page, limit)
+    API->>API: validateFilterParams(location, price_min, price_max)
+    
+    API->>Facade: getPlaces(filterCriteria, paginationParams)
+    
+    Note over Facade: Filter Processing
+    Facade->>PlaceMgr: getAllPlaces(filters, pagination)
+    
+    Note over PlaceMgr: Query Construction
+    PlaceMgr->>PlaceMgr: buildSearchCriteria(filters)
+    PlaceMgr->>PlaceMgr: buildPaginationCriteria(page, limit)
+    
+    PlaceMgr->>PlaceDAO: findPlacesWithCriteria(searchCriteria, paginationCriteria)
+    
+    Note over PlaceDAO: Database Query Execution
+    PlaceDAO->>DB: SELECT p.*, u.firstName, u.lastName<br/>FROM places p<br/>JOIN users u ON p.owner_id = u.id<br/>WHERE p.price BETWEEN ? AND ?<br/>AND p.location LIKE ?<br/>LIMIT ? OFFSET ?
+    DB-->>PlaceDAO: Places result set
+    
+    Note over PlaceDAO: Relationship Loading
+    loop For each place
+        PlaceDAO->>DB: SELECT a.* FROM amenities a<br/>JOIN place_amenities pa ON a.id = pa.amenity_id<br/>WHERE pa.place_id = ?
+        DB-->>PlaceDAO: Amenities for place
+        
+        PlaceDAO->>DB: SELECT AVG(rating), COUNT(*)<br/>FROM reviews WHERE place_id = ?
+        DB-->>PlaceDAO: Rating statistics
+    end
+    
+    PlaceDAO-->>PlaceMgr: List of Place objects with relationships
+    
+    Note over PlaceMgr: Response Preparation
+    PlaceMgr->>PlaceMgr: calculateTotalPages(totalCount, limit)
+    PlaceMgr->>PlaceMgr: enrichPlaceData(places)
+    
+    PlaceMgr-->>Facade: {places: placesList, pagination: paginationInfo}
+    Facade-->>API: {success: true, data: placesData, meta: paginationMeta}
+    
+    Note over API: Response Formatting
+    API->>API: formatPlacesResponse(placesData)
+    API->>API: addPaginationHeaders(paginationMeta)
+    
+    API-->>Client: HTTP 200 OK<br/>{<br/>  "places": [...],<br/>  "pagination": {<br/>    "page": 1,<br/>    "limit": 10,<br/>    "total": 150,<br/>    "totalPages": 15<br/>  }<br/>}
+```
+
+**Performance Optimizations**:
+1. **Efficient Querying**: JOINs for related data in single database round-trip
+2. **Pagination**: Limiting result sets to improve response times
+3. **Relationship Loading**: Strategic loading of amenities and rating data
+4. **Query Construction**: Dynamic query building based on filter criteria
+
+### API Design Patterns Summary
+
+| Pattern | Purpose | Implementation | Benefits |
+|---------|---------|----------------|----------|
+| **Request Validation** | Data integrity | Multi-layer validation | Prevents invalid data propagation |
+| **Authentication Flow** | Security | JWT token validation | Stateless security model |
+| **Business Rule Enforcement** | Constraint validation | Domain-level checks | Maintains data consistency |
+| **Error Handling** | Graceful degradation | Structured error responses | Improved debugging and user experience |
+| **Pagination** | Performance | Offset-based pagination | Handles large datasets efficiently |
+
+## Implementation Guidelines
+
+### Development Standards and Best Practices
+
+#### Code Organization
+- **Package Structure**: Follow the layered architecture with clear package boundaries
+- **Naming Conventions**: Use descriptive names that reflect business concepts
+- **Documentation**: Comprehensive JavaDoc for all public interfaces
+- **Testing Strategy**: Unit tests for each layer with appropriate mocking
+
+#### Security Implementation
+- **Authentication**: JWT tokens with proper expiration and refresh mechanisms
+- **Authorization**: Role-based access control with fine-grained permissions
+- **Input Validation**: Server-side validation with sanitization
+- **Data Protection**: Encryption for sensitive data at rest and in transit
+
+#### Performance Considerations
+- **Database Optimization**: Proper indexing strategy for frequently queried fields
+- **Caching Strategy**: Redis or in-memory caching for frequently accessed data
+- **Connection Pooling**: Database connection management for scalability
+- **Async Processing**: Non-blocking operations for improved throughput
+
+#### Error Handling Strategy
+- **Exception Hierarchy**: Custom exceptions for different error types
+- **Logging Framework**: Structured logging with appropriate log levels
+- **Monitoring**: Application metrics and health checks
+- **Graceful Degradation**: Fallback mechanisms for service failures
+
+### Technology Stack Recommendations
+
+#### Backend Framework
+- **Spring Boot**: For dependency injection and auto-configuration
+- **Spring Security**: For authentication and authorization
+- **Spring Data JPA**: For data access layer implementation
+- **Spring Web**: For REST API development
+
+#### Database Technology
+- **PostgreSQL**: Primary database for production environments
+- **H2 Database**: In-memory database for testing
+- **Connection Pooling**: HikariCP for optimal connection management
+
+#### Testing Framework
+- **JUnit 5**: Unit testing framework
+- **Mockito**: Mocking framework for isolated testing
+- **TestContainers**: Integration testing with real database instances
+- **REST Assured**: API testing framework
+
+### Deployment Architecture
+
+#### Environment Strategy
+- **Development**: Local development with embedded database
+- **Testing**: Staging environment with production-like configuration
+- **Production**: Scalable deployment with monitoring and logging
+
+#### Containerization
+- **Docker**: Container-based deployment for consistency
+- **Docker Compose
