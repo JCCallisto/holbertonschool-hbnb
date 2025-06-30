@@ -1,10 +1,8 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
-from app.services.facade import HBnBFacade
+from app.services.facade import facade
 
 api = Namespace('users', description='User operations')
-
-facade = HBnBFacade()
 
 user_model = api.model('User', {
     'first_name': fields.String(required=True, description='First name of the user'),
@@ -39,6 +37,7 @@ class UserList(Resource):
     @api.response(400, 'Invalid input data')
     @api.response(409, 'Email already exists')
     def post(self):
+        """Create a new user"""
         try:
             user_data = api.payload
             user = facade.create_user(user_data)
@@ -53,6 +52,7 @@ class UserList(Resource):
 
     @api.response(200, 'List of users retrieved successfully', [user_response_model])
     def get(self):
+        """Get all users"""
         try:
             users = facade.get_all_users()
             return [user.to_dict() for user in users], 200
@@ -65,6 +65,7 @@ class UserResource(Resource):
     @api.response(200, 'User details retrieved successfully', user_response_model)
     @api.response(404, 'User not found')
     def get(self, user_id):
+        """Get user details by ID"""
         try:
             user = facade.get_user(user_id)
             if not user:
@@ -79,6 +80,7 @@ class UserResource(Resource):
     @api.response(404, 'User not found')
     @api.response(409, 'Email already exists')
     def put(self, user_id):
+        """Update user by ID"""
         try:
             user_data = api.payload
             

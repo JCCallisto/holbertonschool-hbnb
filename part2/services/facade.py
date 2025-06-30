@@ -93,9 +93,11 @@ class HBnBFacade:
             price=place_data['price'],
             latitude=place_data['latitude'],
             longitude=place_data['longitude'],
-            owner_id=place_data['owner_id']
+            owner_id=place_data['owner_id'],
+            facade=self  # Pass facade reference to avoid circular imports
         )
         
+        # Add amenities to place
         for amenity_id in amenity_ids:
             amenity = self.get_amenity(amenity_id)
             place.add_amenity(amenity)
@@ -126,6 +128,7 @@ class HBnBFacade:
                 if not self.get_amenity(amenity_id):
                     raise ValueError(f"Amenity {amenity_id} not found")
             
+            # Clear current amenities and add new ones
             place._amenities = []
             for amenity_id in amenity_ids:
                 amenity = self.get_amenity(amenity_id)
@@ -135,12 +138,27 @@ class HBnBFacade:
         return place
 
     def create_review(self, review_data):
+        # Validate place and user exist
+        place = self.get_place(review_data['place_id'])
+        user = self.get_user(review_data['user_id'])
+        
+        if not place:
+            raise ValueError("Place not found")
+        if not user:
+            raise ValueError("User not found")
+        
+        # Check if user is trying to review their own place
+        if user.id == place.owner_id:
+            raise ValueError("Users cannot review their own places")
+        
         review = Review(
             text=review_data['text'],
             rating=review_data['rating'],
             place_id=review_data['place_id'],
-            user_id=review_data['user_id']
+            user_id=review_data['user_id'],
+            facade=self  # Pass facade reference
         )
+        
         self.reviews[review.id] = review
         return review
 
@@ -161,10 +179,14 @@ class HBnBFacade:
     def delete_review(self, review_id):
         review = self.reviews.pop(review_id, None)
         if review:
-            if hasattr(review, '_place'):
-                review._place.remove_review(review)
-            if hasattr(review, '_user'):
-                review._user._reviews.remove(review)
+            # Remove review from place and user
+            place = self.get_place(review.place_id)
+            user = self.get_user(review.user_id)
+            
+            if place:
+                place.remove_review(review)
+            if user:
+                user.remove_review(review)
+        
         return review is not None
-
-facade = HBnBFacade()
+    facade = HBnBFacade()

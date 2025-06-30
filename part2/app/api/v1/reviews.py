@@ -1,10 +1,8 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
-from app.services.facade import HBnBFacade
+from app.services.facade import facade
 
 api = Namespace('reviews', description='Review operations')
-
-facade = HBnBFacade()
 
 review_model = api.model('Review', {
     'text': fields.String(required=True, description='Review text'),
@@ -148,3 +146,4 @@ class UserReviewList(Resource):
             return reviews, 200
         except Exception as e:
             api.abort(500, f"Internal server error: {str(e)}")
+

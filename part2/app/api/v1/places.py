@@ -1,10 +1,8 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
-from app.services.facade import HBnBFacade
+from app.services.facade import facade
 
 api = Namespace('places', description='Place operations')
-
-facade = HBnBFacade()
 
 place_model = api.model('Place', {
     'title': fields.String(required=True, description='Title of the place'),
@@ -71,6 +69,7 @@ class PlaceList(Resource):
     @api.response(400, 'Invalid input data')
     @api.response(404, 'Owner or amenity not found')
     def post(self):
+        """Create a new place"""
         try:
             place_data = api.payload
             place = facade.create_place(place_data)
@@ -85,6 +84,7 @@ class PlaceList(Resource):
 
     @api.response(200, 'List of places retrieved successfully', [place_detailed_response_model])
     def get(self):
+        """Get all places"""
         try:
             places = facade.get_all_places_with_details()
             return [place.to_dict(include_owner=True, include_amenities=True) for place in places], 200
@@ -97,6 +97,7 @@ class PlaceResource(Resource):
     @api.response(200, 'Place details retrieved successfully', place_detailed_response_model)
     @api.response(404, 'Place not found')
     def get(self, place_id):
+        """Get place details by ID"""
         try:
             place = facade.get_place_with_details(place_id)
             if not place:
@@ -110,6 +111,7 @@ class PlaceResource(Resource):
     @api.response(400, 'Invalid input data')
     @api.response(404, 'Place, owner or amenity not found')
     def put(self, place_id):
+        """Update place by ID"""
         try:
             place_data = api.payload
             
@@ -125,196 +127,6 @@ class PlaceResource(Resource):
         except ValueError as e:
             if "not found" in str(e):
                 api.abort(404, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
-from flask_restx import Namespace, Resource, fields
-from flask import request
-from app.services.facade import HBnBFacade
-
-api = Namespace('amenities', description='Amenity operations')
-
-facade = HBnBFacade()
-
-amenity_model = api.model('Amenity', {
-    'name': fields.String(required=True, description='Name of the amenity')
-})
-
-amenity_response_model = api.model('AmenityResponse', {
-    'id': fields.String(description='Amenity ID'),
-    'name': fields.String(description='Name of the amenity'),
-    'created_at': fields.String(description='Creation timestamp'),
-    'updated_at': fields.String(description='Last update timestamp')
-})
-
-amenity_update_model = api.model('AmenityUpdate', {
-    'name': fields.String(description='Name of the amenity')
-})
-
-
-@api.route('/')
-class AmenityList(Resource):
-    @api.expect(amenity_model, validate=True)
-    @api.response(201, 'Amenity successfully created', amenity_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(409, 'Amenity name already exists')
-    def post(self):
-        try:
-            amenity_data = api.payload
-            amenity = facade.create_amenity(amenity_data)
-            return amenity.to_dict(), 201
-        except ValueError as e:
-            if "Amenity name already exists" in str(e):
-                api.abort(409, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
-
-    @api.response(200, 'List of amenities retrieved successfully', [amenity_response_model])
-    def get(self):
-        try:
-            amenities = facade.get_all_amenities()
-            return [amenity.to_dict() for amenity in amenities], 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
-
-
-@api.route('/<string:amenity_id>')
-class AmenityResource(Resource):
-    @api.response(200, 'Amenity details retrieved successfully', amenity_response_model)
-    @api.response(404, 'Amenity not found')
-    def get(self, amenity_id):
-        try:
-            amenity = facade.get_amenity(amenity_id)
-            if not amenity:
-                api.abort(404, 'Amenity not found')
-            return amenity.to_dict(), 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
-
-    @api.expect(amenity_update_model, validate=True)
-    @api.response(200, 'Amenity updated successfully', amenity_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(404, 'Amenity not found')
-    @api.response(409, 'Amenity name already exists')
-    def put(self, amenity_id):
-        try:
-            amenity_data = api.payload
-            
-            existing_amenity = facade.get_amenity(amenity_id)
-            if not existing_amenity:
-                api.abort(404, 'Amenity not found')
-            
-            updated_amenity = facade.update_amenity(amenity_id, amenity_data)
-            if not updated_amenity:
-                api.abort(404, 'Amenity not found')
-            
-            return updated_amenity.to_dict(), 200
-        except ValueError as e:
-            if "Amenity name already exists" in str(e):
-                api.abort(409, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
-from flask_restx import Namespace, Resource, fields
-from flask import request
-from app.services.facade import HBnBFacade
-
-api = Namespace('users', description='User operations')
-
-facade = HBnBFacade()
-
-user_model = api.model('User', {
-    'first_name': fields.String(required=True, description='First name of the user'),
-    'last_name': fields.String(required=True, description='Last name of the user'),
-    'email': fields.String(required=True, description='Email of the user'),
-    'password': fields.String(required=True, description='Password of the user'),
-    'is_admin': fields.Boolean(description='Admin status of the user', default=False)
-})
-
-user_response_model = api.model('UserResponse', {
-    'id': fields.String(description='User ID'),
-    'first_name': fields.String(description='First name of the user'),
-    'last_name': fields.String(description='Last name of the user'),
-    'email': fields.String(description='Email of the user'),
-    'is_admin': fields.Boolean(description='Admin status of the user'),
-    'created_at': fields.String(description='Creation timestamp'),
-    'updated_at': fields.String(description='Last update timestamp')
-})
-
-user_update_model = api.model('UserUpdate', {
-    'first_name': fields.String(description='First name of the user'),
-    'last_name': fields.String(description='Last name of the user'),
-    'email': fields.String(description='Email of the user'),
-    'password': fields.String(description='Password of the user')
-})
-
-
-@api.route('/')
-class UserList(Resource):
-    @api.expect(user_model, validate=True)
-    @api.response(201, 'User successfully created', user_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(409, 'Email already exists')
-    def post(self):
-        try:
-            user_data = api.payload
-            user = facade.create_user(user_data)
-            return user.to_dict(), 201
-        except ValueError as e:
-            if "Email already exists" in str(e):
-                api.abort(409, str(e))
-            else:
-                api.abort(400, str(e))
-        except Exception as e:
-            api.abort(400, f"Invalid input data: {str(e)}")
-
-    @api.response(200, 'List of users retrieved successfully', [user_response_model])
-    def get(self):
-        try:
-            users = facade.get_all_users()
-            return [user.to_dict() for user in users], 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
-
-
-@api.route('/<string:user_id>')
-class UserResource(Resource):
-    @api.response(200, 'User details retrieved successfully', user_response_model)
-    @api.response(404, 'User not found')
-    def get(self, user_id):
-        try:
-            user = facade.get_user(user_id)
-            if not user:
-                api.abort(404, 'User not found')
-            return user.to_dict(), 200
-        except Exception as e:
-            api.abort(500, f"Internal server error: {str(e)}")
-
-    @api.expect(user_update_model, validate=True)
-    @api.response(200, 'User updated successfully', user_response_model)
-    @api.response(400, 'Invalid input data')
-    @api.response(404, 'User not found')
-    @api.response(409, 'Email already exists')
-    def put(self, user_id):
-        try:
-            user_data = api.payload
-            
-            existing_user = facade.get_user(user_id)
-            if not existing_user:
-                api.abort(404, 'User not found')
-            
-            updated_user = facade.update_user(user_id, user_data)
-            if not updated_user:
-                api.abort(404, 'User not found')
-            
-            return updated_user.to_dict(), 200
-        except ValueError as e:
-            if "Email already exists" in str(e):
-                api.abort(409, str(e))
             else:
                 api.abort(400, str(e))
         except Exception as e:
