@@ -1,64 +1,22 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from marshmallow import ValidationError
+from app.models.user import User
 from app.extensions import db
-from models.user import User
-from app.schemas.user_schema import UserSchema
+users_bp = Blueprint('users', __name__)
 
-users_bp = Blueprint('users_bp', __name__)
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
+@users_bp.route('/api/v1/users/', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    email = data['email']
+    password = data['password']
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    is_admin = data.get('is_admin', False)
 
-@users_bp.route('/', methods=['POST'])
-def create_user():
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({"error": "No input data"}), 400
-    try:
-        data = user_schema.load(json_data)
-    except ValidationError as err:
-        return jsonify(err.messages), 422
+    if User.query.filter_by(email=email).first():
+        return jsonify({'message': 'User already exists'}), 409
 
-    user = User(**data)
+    user = User(email=email, first_name=first_name, last_name=last_name, is_admin=is_admin)
+    user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    return user_schema.dump(user), 201
-
-@users_bp.route('/', methods=['GET'])
-@jwt_required(optional=True)
-def list_users():
-    users = User.query.all()
-    return jsonify(users_schema.dump(users)), 200
-
-@users_bp.route('/<int:user_id>', methods=['PUT'])
-@jwt_required()
-def update_user(user_id):
-    user = User.query.get_or_404(user_id)
-    current_user_id = get_jwt_identity()
-    if user.id != current_user_id:
-        return jsonify({"error": "Unauthorized"}), 403
-
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({"error": "No input data"}), 400
-    try:
-        data = user_schema.load(json_data, partial=True)
-    except ValidationError as err:
-        return jsonify(err.messages), 422
-
-    for key, value in data.items():
-        setattr(user, key, value)
-    db.session.commit()
-    return user_schema.dump(user), 200
-
-@users_bp.route('/<int:user_id>', methods=['DELETE'])
-@jwt_required()
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    current_user_id = get_jwt_identity()
-    if user.id != current_user_id:
-        return jsonify({"error": "Unauthorized"}), 403
-
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({"message": "User deleted"}), 200
+    return jsonify({'id': user.id, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'is_admin': user.is_admin}), 201
