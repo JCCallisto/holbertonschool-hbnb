@@ -1,17 +1,18 @@
-from app.extensions import db, bcrypt
+from app.extensions import db
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(128), unique=True, nullable=False)
-    first_name = db.Column(db.String(128))
-    last_name = db.Column(db.String(128))
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
     is_admin = db.Column(db.Boolean, default=False)
-    places = db.relationship('Place', backref='owner', lazy=True)
-    reviews = db.relationship('Review', backref='author', lazy=True)
+    places = db.relationship('Place', backref='owner', lazy=True, cascade='all, delete-orphan')
+    reviews = db.relationship('Review', backref='author', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
-        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return check_password_hash(self.password_hash, password)
