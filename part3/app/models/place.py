@@ -1,4 +1,5 @@
 from app.extensions import db
+from app.models.place_amenity import place_amenity
 
 class Place(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -6,4 +7,4 @@ class Place(db.Model):
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     reviews = db.relationship('Review', backref='place', lazy=True, cascade='all, delete-orphan')
-    amenities = db.relationship('Amenity', secondary='place_amenity', backref='places', lazy='dynamic')
+    amenities = db.relationship('Amenity', secondary=place_amenity, backref='places', lazy='dynamic')
