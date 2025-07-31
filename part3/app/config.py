@@ -8,3 +8,7 @@ class DevelopmentConfig:
 
 class ProductionConfig(DevelopmentConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'mysql://user:pass@localhost/hbnb_prod')
+
+class TestingConfig(DevelopmentConfig):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'

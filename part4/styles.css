@@ -1,0 +1,98 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f8f8f8;
+    margin: 0;
+    padding: 0;
+}
+header, footer {
+    background: #333;
+    color: #fff;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.logo {
+    height: 40px;
+}
+nav a {
+    color: #fff;
+    margin-left: 20px;
+    text-decoration: none;
+}
+.login-button {
+    background: #ff9800;
+    color: #fff !important;
+    padding: 7px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-left: 20px;
+}
+main {
+    margin: 30px auto;
+    max-width: 900px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+}
+.place-card, .review-card, .place-details {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fafafa;
+}
+.place-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.details-button {
+    background: #2196f3;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+.place-details {
+    margin-top: 20px;
+}
+.place-info {
+    margin-bottom: 10px;
+}
+.review-card {
+    background: #f0f0f0;
+}
+.add-review.form {
+    margin-top: 20px;
+}
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+input, textarea, select, button {
+    font-size: 1em;
+    padding: 7px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+}
+button[type="submit"] {
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.error {
+    color: #c00;
+    margin-top: 10px;
+}
+#places-list {
+    margin-top: 20px;
+}
+#review-message {
+    margin-top: 10px;
+    font-weight: bold;
+}

@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, jsonify
 from app.extensions import db
 from flask_jwt_extended import JWTManager
+from sqlalchemy.exc import IntegrityError
 
 def create_app(config_object='app.config.DevelopmentConfig'):
     app = Flask(__name__)
@@ -31,8 +32,9 @@ def create_app(config_object='app.config.DevelopmentConfig'):
     app.register_blueprint(place_amenities_bp)
     app.register_blueprint(place_reviews_bp)
 
-    @app.route('/')
-    def index():
-        return "HBnB API is running!", 200
-
+    @app.errorhandler(IntegrityError)
+    def handle_integrity_error(error):
+        db.session.rollback()
+        return jsonify({"msg": "Database integrity error (likely duplicate field)"}), 400
+     
     return app
