@@ -1,40 +1,29 @@
-from flask import Flask, jsonify
-from app.extensions import db
-from flask_jwt_extended import JWTManager
-from sqlalchemy.exc import IntegrityError
+from flask import Flask
+from app.extensions import db, migrate, bcrypt, jwt
+from app.error_handlers import register_error_handlers
+from app.api.v1.users import users_bp
+from app.api.v1.places import places_bp
+from app.api.v1.reviews import reviews_bp
+from app.api.v1.auth import auth_bp
+from app.api.v1.place_amenities import place_amenities_bp
+from app.api.v1.place_reviews import place_reviews_bp
+from app.api.v1.amenities import amenities_bp
 
-def create_app(config_object='app.config.DevelopmentConfig'):
+def create_app(config_class="DevelopmentConfig"):  # Default to development config
     app = Flask(__name__)
-    app.config.from_object(config_object)
-
+    app.config.from_object(f"app.config.{config_class}")
     db.init_app(app)
-    jwt = JWTManager(app)
-
-    from app.models.place_amenity import place_amenity
-    from app.models.user import User
-    from app.models.amenity import Amenity
-    from app.models.review import Review
-    from app.models.place import Place
-
-    from app.routes.users import users_bp
-    from app.routes.places import places_bp
-    from app.routes.reviews import reviews_bp
-    from app.routes.amenities import amenities_bp
-    from app.routes.auth import auth_bp
-    from app.routes.place_amenities import place_amenities_bp
-    from app.routes.place_reviews import place_reviews_bp
+    migrate.init_app(app, db)
+    bcrypt.init_app(app)
+    jwt.init_app(app)
+    register_error_handlers(app)
 
     app.register_blueprint(users_bp)
     app.register_blueprint(places_bp)
     app.register_blueprint(reviews_bp)
-    app.register_blueprint(amenities_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(place_amenities_bp)
     app.register_blueprint(place_reviews_bp)
+    app.register_blueprint(amenities_bp)
 
-    @app.errorhandler(IntegrityError)
-    def handle_integrity_error(error):
-        db.session.rollback()
-        return jsonify({"msg": "Database integrity error (likely duplicate field)"}), 400
-     
     return app

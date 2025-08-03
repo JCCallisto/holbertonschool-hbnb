@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>HBNB - Places</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="icon.png">
+  <meta charset="UTF-8">
+  <title>Available Places</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="icon.png">
 </head>
 <body>
-    <header>
-        <img src="logo.png" class="logo" alt="App logo">
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="login.html" id="login-link" class="login-button">Login</a>
-        </nav>
-    </header>
-    <main>
-        <h1>Places</h1>
-        <label for="price-filter">Filter by price:</label>
-        <select id="price-filter">
-            <option value="10">10</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="all">All</option>
-        </select>
-        <div id="places-list"></div>
-    </main>
-    <footer>
-        <p>All rights reserved.</p>
-    </footer>
-    <script src="scripts.js"></script>
+  <header>
+    <img src="logo.png" alt="App Logo" class="logo">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="login.html" id="login-link" class="login-button">Login</a>
+      <a href="signup.html" class="login-button">Sign Up</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Available Places</h1>
+    <div class="filter-section">
+      <label for="country-filter"><strong>Country:</strong></label>
+      <select id="country-filter">
+        <option value="All">All</option>
+      </select>
+    </div>
+    <div id="places-list" class="places-list"></div>
+  </main>
+  <footer>
+    © 2024 HBnB Evolution. All rights reserved.
+  </footer>
+  <script src="scripts.js"></script>
 </body>
 </html>

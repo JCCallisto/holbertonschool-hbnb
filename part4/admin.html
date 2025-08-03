@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="icon.png">
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="App Logo" class="logo">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="admin.html" class="login-button">Admin</a>
+      <a href="javascript:void(0)" id="logout-link" class="login-button">Logout</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Admin Dashboard</h1>
+    <section>
+      <h2>Amenities Management</h2>
+      <ul id="amenities-list"></ul>
+      <form id="add-amenity-form">
+        <input type="text" id="amenity-name" placeholder="Amenity Name" required>
+        <input type="text" id="amenity-desc" placeholder="Description">
+        <button type="submit">Add Amenity</button>
+      </form>
+      <div id="admin-message"></div>
+    </section>
+  </main>
+  <footer>
+    © 2024 HBnB Evolution. All rights reserved.
+  </footer>
+  <script src="scripts.js"></script>
+</body>
+</html>
