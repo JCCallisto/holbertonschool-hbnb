@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = document.getElementById('password').value;
 
       try {
-        const response = await fetch('http://localhost:5000/api/v1/login/', {
+        const response = await fetch('http://127.0.0.1:5000/api/v1/login/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/v1/signup/', {
+        const response = await fetch('http://127.0.0.1:5000/api/v1/users/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -118,24 +118,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // INDEX PAGE (PLACES LIST)
   // ---------------------------
   if (document.getElementById('places-list')) {
-    const token = getCookie('token');
-    const loginLink = document.getElementById('login-link');
-    if (!token) loginLink.style.display = 'inline-block';
-    else loginLink.style.display = 'none';
+    fetch('http://127.0.0.1:5000/api/v1/places/')
+      .then(response => response.json())
+      .then(places => {
+        console.log('Fetched places:', places); // debug
+        displayPlaces(places);
 
-    const loadingDiv = document.getElementById('loading-places');
-    const noPlacesDiv = document.getElementById('no-places-message');
-    if (loadingDiv) loadingDiv.style.display = 'block';
-    if (noPlacesDiv) noPlacesDiv.style.display = 'none';
-
-    fetchPlaces(token, loadingDiv, noPlacesDiv);
-
-    const countryFilter = document.getElementById('country-filter');
-    if (countryFilter) {
-      countryFilter.addEventListener('change', () =>
-        filterPlacesByCountry(noPlacesDiv)
-      );
-    }
+        // Setup price filter
+        const priceSelect = document.getElementById('max-price');
+        priceSelect.addEventListener('change', () => {
+          const selected = priceSelect.value;
+          let filtered = places;
+          if (selected !== 'All') {
+            const max = parseFloat(selected);
+            filtered = places.filter(place => place.price <= max);
+          }
+          displayPlaces(filtered);
+        });
+      })
+      .catch(error => {
+        document.getElementById('places-list').innerHTML = `<p>Error loading places: ${error.message}</p>`;
+      });
     return;
   }
 
@@ -149,67 +152,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!token) loginLink.style.display = 'inline-block';
     else loginLink.style.display = 'none';
 
+    // PATCH: If placeId is missing, show error and stop.
+    if (!placeId) {
+      document.getElementById('place-details').innerHTML = '<p>Error: No place selected. Please use a valid link to this page.</p>';
+      return;
+    }
+
     fetchPlaceDetails(token, placeId);
 
     // Add review logic
-    if (token) {
-      document.getElementById('add-review').style.display = 'block';
+    const reviewFormSection = document.getElementById('review-form');
+    if (token && reviewFormSection) {
+      reviewFormSection.style.display = 'block';
       setupReviewForm(token, placeId);
-    } else {
-      document.getElementById('add-review').style.display = 'none';
+    } else if (reviewFormSection) {
+      reviewFormSection.style.display = 'none';
     }
-    return;
-  }
-
-  // ---------------------------
-  // ADD REVIEW PAGE (STANDALONE)
-  // ---------------------------
-  if (document.getElementById('review-form') && document.getElementById('reviewing-title')) {
-    const token = getCookie('token');
-    if (!token) window.location.href = 'index.html';
-
-    const placeId = getPlaceIdFromURL();
-
-    // Optionally fetch place info for title
-    fetch(`http://localhost:5000/api/v1/places/${placeId}`)
-      .then(resp => resp.json())
-      .then(place => {
-        document.getElementById('reviewing-title').textContent = `Reviewing: ${place.name}`;
-      }).catch(() => {
-        document.getElementById('reviewing-title').textContent = "Add a Review";
-      });
-
-    const reviewForm = document.getElementById('review-form');
-    const messageDiv = document.getElementById('review-message');
-
-    reviewForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      messageDiv.textContent = "";
-      const comment = document.getElementById('comment').value;
-      const rating = document.getElementById('rating').value;
-      try {
-        const response = await fetch(`http://localhost:5000/api/v1/places/${placeId}/reviews`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ comment, rating })
-        });
-        if (response.ok) {
-          reviewForm.reset();
-          messageDiv.style.color = "green";
-          messageDiv.textContent = "Review submitted successfully!";
-        } else {
-          const err = await response.json();
-          messageDiv.style.color = "red";
-          messageDiv.textContent = (err.msg || "Failed to submit review");
-        }
-      } catch (error) {
-        messageDiv.style.color = "red";
-        messageDiv.textContent = error.message;
-      }
-    });
     return;
   }
 
@@ -223,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch amenities
     async function fetchAmenities() {
       try {
-        const response = await fetch('http://localhost:5000/api/v1/amenities/', {
+        const response = await fetch('http://127.0.0.1:5000/api/v1/amenities/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -250,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const token = getCookie('token');
       if (!token) return;
       try {
-        const resp = await fetch(`http://localhost:5000/api/v1/amenities/${amenityId}`, {
+        const resp = await fetch(`http://127.0.0.1:5000/api/v1/amenities/${amenityId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -270,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = document.getElementById('amenity-name').value;
       const desc = document.getElementById('amenity-desc').value;
       try {
-        const resp = await fetch('http://localhost:5000/api/v1/amenities/', {
+        const resp = await fetch('http://127.0.0.1:5000/api/v1/amenities/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -306,79 +264,28 @@ function getPlaceIdFromURL() {
   return params.get('id');
 }
 
-// ---------------------------
-// Fetch places from API
-async function fetchPlaces(token, loadingDiv, noPlacesDiv) {
-  try {
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const response = await fetch('http://localhost:5000/api/v1/places/', { method: 'GET', headers });
-    if (loadingDiv) loadingDiv.style.display = 'none';
-    if (response.ok) {
-      const places = await response.json();
-      window.placesData = places;
-      displayPlaces(places);
-      populateCountryFilter(places);
-      filterPlacesByCountry(noPlacesDiv); // Run initial filter to show/hide message
-    } else {
-      document.getElementById('places-list').innerHTML = '<p>Error loading places.</p>';
-    }
-  } catch (error) {
-    if (loadingDiv) loadingDiv.style.display = 'none';
-    document.getElementById('places-list').innerHTML = `<p>Error: ${error.message}</p>`;
-  }
-}
+// --- Place rendering and price filter for index.html ---
 
-// Render places (cards)
 function displayPlaces(places) {
+  console.log('Showing places:', places); // debug
   const placesList = document.getElementById('places-list');
   placesList.innerHTML = '';
+  if (!places.length) {
+    placesList.innerHTML = '<p>No places found.</p>';
+    return;
+  }
   places.forEach(place => {
     const card = document.createElement('div');
     card.className = 'place-card';
-    card.dataset.country = place.country || 'Unknown';
     card.innerHTML = `
-      <img src="${place.image || 'https://via.placeholder.com/80?text=Place'}" alt="${place.name}">
       <h2>${place.name}</h2>
       <div class="place-desc">${place.description ? place.description.slice(0,80) + (place.description.length>80 ? "..." : "") : ""}</div>
-      <p>Location: ${place.location || place.city || place.address || 'Unknown'}</p>
-      <p>Price per night: $${place.price || place.price_per_night || 0}</p>
-      <p>Country: ${place.country || 'Unknown'}</p>
+      <p>Location: ${place.location || 'Unknown'}</p>
+      <p>Price per night: $${place.price || 0}</p>
       <button class="details-button" onclick="window.location.href='place.html?id=${place.id}'">View Details</button>
     `;
     placesList.appendChild(card);
   });
-}
-
-// Populate country filter options (dynamic)
-function populateCountryFilter(places) {
-  const countries = [...new Set(places.map(p => p.country || 'Unknown'))];
-  const countryFilter = document.getElementById('country-filter');
-  if (!countryFilter) return;
-  countryFilter.innerHTML = '<option value="All">All</option>';
-  countries.forEach(country => {
-    const option = document.createElement('option');
-    option.value = country;
-    option.textContent = country;
-    countryFilter.appendChild(option);
-  });
-}
-
-// Filter places by country, show/hide "no places found" message
-function filterPlacesByCountry(noPlacesDiv) {
-  const selectedCountry = document.getElementById('country-filter').value;
-  const cards = document.querySelectorAll('.place-card');
-  let shown = 0;
-  cards.forEach(card => {
-    if (selectedCountry === 'All' || card.dataset.country === selectedCountry) {
-      card.style.display = '';
-      shown++;
-    } else {
-      card.style.display = 'none';
-    }
-  });
-  if (noPlacesDiv) {
-    noPlacesDiv.style.display = shown === 0 ? 'block' : 'none';
-  }
 }
 
 // ---------------------------
@@ -386,7 +293,7 @@ function filterPlacesByCountry(noPlacesDiv) {
 async function fetchPlaceDetails(token, placeId) {
   try {
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const response = await fetch(`http://localhost:5000/api/v1/places/${placeId}`, { headers });
+    const response = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, { headers });
     if (response.ok) {
       const place = await response.json();
       displayPlaceDetails(place);
@@ -429,7 +336,7 @@ function displayReviews(reviews) {
     card.className = 'review-card';
     card.innerHTML = `
       <strong>${review.user_name || 'Anonymous'}:</strong>
-      <p>${review.comment}</p>
+      <p>${review.text || review.comment}</p>
       <p>Rating: ${renderStars(review.rating)}</p>
     `;
     reviewsDiv.appendChild(card);
@@ -456,13 +363,13 @@ function setupReviewForm(token, placeId) {
     const comment = document.getElementById('comment').value;
     const rating = document.getElementById('rating').value;
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/places/${placeId}/reviews`, {
+      const response = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ comment, rating })
+        body: JSON.stringify({ text: comment, rating })
       });
       if (response.ok) {
         reviewForm.reset();

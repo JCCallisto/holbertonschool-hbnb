@@ -14,6 +14,8 @@ class Place(db.Model):
     owner_id = db.Column(db.String(60), db.ForeignKey('users.id'), nullable=False)
     amenities = db.relationship('Amenity', secondary=place_amenity, backref=db.backref('places', lazy='dynamic'), lazy='dynamic')
 
+    # --- ADD THIS LINE ---
+    reviews = db.relationship('Review', backref='place', lazy='dynamic')
 
     def to_dict(self):
         return {
@@ -24,6 +26,7 @@ class Place(db.Model):
             "location": self.location,
             "latitude": self.latitude,
             "longitude": self.longitude,
-            "owner_id": self.owner_id
-            # Add more fields if needed
+            "owner_id": self.owner_id,
+            # --- ADD THIS LINE ---
+            "reviews": [review.to_dict() for review in self.reviews]
         }

@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint('auth', __name__)
 
+# ---- REGISTER: For future use; main signup handled by users_bp ----
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -39,12 +40,22 @@ def register():
 
     return jsonify(user.to_dict()), 201
 
-@auth_bp.route('/api/v1/auth/login', methods=['POST'])
+# ---- FIXED LOGIN ENDPOINT ----
+@auth_bp.route('/api/v1/login/', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        # Handle CORS preflight
+        response = jsonify({"msg": "CORS preflight"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response, 200
+
     data = request.get_json()
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({"msg": "Email and password required"}), 400
-    user = User.query.filter_by(email=data['email'].lower().strip()).first()
+
+    user = User.query.filter(func.lower(User.email) == data['email'].lower().strip()).first()
     if not user or not user.check_password(data['password']):
         return jsonify({"msg": "Invalid credentials"}), 401
 
@@ -53,4 +64,6 @@ def login():
         "is_admin": user.is_admin
     }
     access_token = create_access_token(identity=str(user.id), additional_claims=claims)
-    return jsonify(access_token=access_token), 200
+    response = jsonify(access_token=access_token)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
