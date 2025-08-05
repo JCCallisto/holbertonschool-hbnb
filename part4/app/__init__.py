@@ -8,11 +8,15 @@ from app.api.v1.auth import auth_bp
 from app.api.v1.place_amenities import place_amenities_bp
 from app.api.v1.place_reviews import place_reviews_bp
 from app.api.v1.amenities import amenities_bp
-from flask_cors import CORS  # <-- Import CORS
+from flask_cors import CORS
 
-def create_app(config_class="DevelopmentConfig"):  # Default to development config
+def create_app(config_class_name="DevelopmentConfig"):
     app = Flask(__name__)
-    app.config.from_object(f"app.config.{config_class}")
+    # Dynamically select config class by string name (default: DevelopmentConfig)
+    from app import config as app_config
+    config_class = getattr(app_config, config_class_name)
+    app.config.from_object(config_class)
+
     db.init_app(app)
     migrate.init_app(app, db)
     bcrypt.init_app(app)

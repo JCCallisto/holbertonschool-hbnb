@@ -19,13 +19,36 @@ function deleteCookie(name) {
 }
 
 // ---------------------------
-// LOGOUT LOGIC
+// SHOW LOGIN/LOGOUT BUTTON LOGIC (GLOBAL)
 // ---------------------------
+function showAuthLinks() {
+  const loginLink = document.getElementById('login-link');
+  const logoutLink = document.getElementById('logout-link');
+  const token = getCookie('token');
+  if (loginLink && logoutLink) {
+    if (token) {
+      loginLink.style.display = 'none';
+      logoutLink.style.display = 'inline-block';
+    } else {
+      loginLink.style.display = 'inline-block';
+      logoutLink.style.display = 'none';
+    }
+  }
+}
+
+// Run on every page load
 document.addEventListener('DOMContentLoaded', () => {
+  showAuthLinks();
+
+  // ---------------------------
+  // LOGOUT LOGIC
+  // ---------------------------
   const logoutLink = document.getElementById('logout-link');
   if (logoutLink) {
-    logoutLink.addEventListener('click', () => {
+    logoutLink.addEventListener('click', (e) => {
+      e.preventDefault();
       deleteCookie('token');
+      showAuthLinks();
       window.location.href = 'login.html';
     });
   }
@@ -52,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           const data = await response.json();
           setCookie('token', data.access_token);
+          showAuthLinks();
           window.location.href = 'index.html';
         } else {
           const err = await response.json();
@@ -121,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('http://127.0.0.1:5000/api/v1/places/')
       .then(response => response.json())
       .then(places => {
-        console.log('Fetched places:', places); // debug
         displayPlaces(places);
 
         // Setup price filter
@@ -148,9 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('place-details')) {
     const placeId = getPlaceIdFromURL();
     const token = getCookie('token');
-    const loginLink = document.getElementById('login-link');
-    if (!token) loginLink.style.display = 'inline-block';
-    else loginLink.style.display = 'none';
+    showAuthLinks();
 
     // PATCH: If placeId is missing, show error and stop.
     if (!placeId) {
@@ -267,7 +288,6 @@ function getPlaceIdFromURL() {
 // --- Place rendering and price filter for index.html ---
 
 function displayPlaces(places) {
-  console.log('Showing places:', places); // debug
   const placesList = document.getElementById('places-list');
   placesList.innerHTML = '';
   if (!places.length) {

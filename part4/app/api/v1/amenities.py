@@ -12,13 +12,15 @@ def create_amenity():
     if not claims.get('is_admin'):
         return jsonify({"msg": "Admin only"}), 403
     data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({"msg": "Missing required field: name"}), 400
     amenity = Amenity(
         name=data['name'],
         description=data.get('description')
     )
     db.session.add(amenity)
     db.session.commit()
-    return jsonify({"id": amenity.id, "name": amenity.name}), 201
+    return jsonify({"id": amenity.id, "name": amenity.name, "description": amenity.description}), 201
 
 @amenities_bp.route('/api/v1/amenities/<string:amenity_id>', methods=['GET'])
 def get_amenity(amenity_id):
@@ -52,4 +54,8 @@ def delete_amenity(amenity_id):
 @amenities_bp.route('/api/v1/amenities/', methods=['GET'])
 def list_amenities():
     amenities = Amenity.query.all()
-    return jsonify([{"id": a.id, "name": a.name, "description": a.description} for a in amenities]), 200
+    return jsonify([{
+        "id": a.id,
+        "name": a.name,
+        "description": a.description
+    } for a in amenities]), 200

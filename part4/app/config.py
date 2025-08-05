@@ -12,4 +12,5 @@ class ProductionConfig:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'prod-secret-key')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'mysql://user:password@localhost/hbnb_prod')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'prod-jwt-secret-key')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'prod-jwt-secret-key'
+)
